@@ -2,6 +2,8 @@
 import { Department, connectDB } from "../lib/db_connection.js";
 import Layout from "../layouts/Layout.astro";
 
+export const prerender = false;
+
 async function getDepartments() {
     try {
         await connectDB();
