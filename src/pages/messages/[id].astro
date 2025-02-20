@@ -2,12 +2,15 @@
 import { Department, Message, connectDB } from '../../lib/db_connection.js';
 import Layout from '../../layouts/Layout.astro';
 
+export const prerender = false;
+
 export async function getStaticPaths() {
     try {
         await connectDB();
         const departments = await Department.find({});
         return departments.map(department => ({
-            params: { id: department._id.toString() }
+            params: { id: department._id.toString() },
+            props: { departmentId: department._id.toString() }
         }));
     } catch (error) {
         console.error('Error generating static paths:', error);
