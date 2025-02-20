@@ -1,0 +1,178 @@
+---
+import { Department, Message, connectDB } from '../lib/db_connection.js';
+
+// Function to get all departments
+async function getDepartments() {
+    try {
+        await connectDB(); // Connect to the database before querying
+        const departments = await Department.find({});
+        return departments;
+    } catch (error) {
+        console.error('Error fetching departments:', error);
+        return [];
+    }
+}
+
+// Function to get messages for a specific department
+async function getDepartmentMessages(departmentId) {
+    try {
+        await connectDB();
+        const departmentMessages = await Department.findById(departmentId).populate('messages');
+        if (departmentMessages) {
+            return departmentMessages.messages;
+        } else {
+            return [];
+        }
+    } catch (error) {
+        console.error('Error fetching department messages:', error);
+        return [];
+    }
+}
+
+// Function to update a department's address
+async function updateDepartment(departmentId, newAddress) {
+    try {
+        await connectDB();
+        const updatedDepartment = await Department.findByIdAndUpdate(
+            departmentId,
+            { address: newAddress },
+            { new: true }
+        );
+        return updatedDepartment;
+    } catch (error) {
+        console.error('Error updating department:', error);
+        return null;
+    }
+}
+
+// Function to update a message's text
+async function updateMessage(messageId, newText) {
+    try {
+        await connectDB();
+        const updatedMessage = await Message.findByIdAndUpdate(
+            messageId,
+            { text: newText },
+            { new: true }
+        );
+        return updatedMessage;
+    } catch (error) {
+        console.error('Error updating message:', error);
+        return null;
+    }
+}
+
+
+let departments = await getDepartments();
+let selectedDepartmentId = null;
+let messages = [];
+
+if (departments.length > 0) {
+    selectedDepartmentId = departments[0]._id.toString(); // Select the first department by default
+    messages = await getDepartmentMessages(selectedDepartmentId);
+}
+
+---
+
+<div id="container">
+    <main>
+        <section id="departments-screen">
+            <h1>Departments</h1>
+            <ul>
+                {departments.map(department => (
+                    <li>
+                        <button onclick={() => {
+                            selectedDepartmentId = department._id.toString();
+                            messages = getDepartmentMessages(selectedDepartmentId);
+                        }}>Select</button>
+                        <span>{department.address}</span>
+                        <input 
+                            type="text" 
+                            value={department.address} 
+                            onchange={(event) => {
+                                // In a real application, you would handle state updates and UI re-rendering properly
+                                // This is a simplified example
+                                department.address = event.target.value;
+                            }}
+                        />
+                        <button onclick={async () => {
+                            const newAddress = department.address; // Get the updated address from the input field
+                            const updatedDept = await updateDepartment(department._id, newAddress);
+                            if(updatedDept) {
+                                // Update the departments list after successful update (re-fetch or update in place)
+                                departments = await getDepartments();
+                                console.log("Department updated successfully");
+                            } else {
+                                console.error("Failed to update department");
+                            }
+                        }}>Update Address</button>
+                    </li>
+                ))}
+            </ul>
+        </section>
+
+        <section id="messages-screen">
+            <h2>Messages for Department: {selectedDepartmentId}</h2>
+            <ul>
+                {messages.map(message => (
+                    <li>
+                        <span>{message.text}</span>
+                         <input
+                            type="text"
+                            value={message.text}
+                            onchange={(event) => {
+                                message.text = event.target.value;
+                            }}
+                         />
+                        <button onclick={async () => {
+                            const newText = message.text;
+                            const updatedMsg = await updateMessage(message._id, newText);
+                            if(updatedMsg) {
+                                messages = await getDepartmentMessages(selectedDepartmentId); // Refresh messages
+                                console.log("Message updated successfully");
+                            } else {
+                                console.error("Failed to update message");
+                            }
+                        }}>Update Message</button>
+                    </li>
+                ))}
+            </ul>
+        </section>
+    </main>
+</div>
+
+<style>
+    #container {
+        font-family: sans-serif;
+        padding: 20px;
+    }
+
+    #departments-screen, #messages-screen {
+        margin-bottom: 20px;
+    }
+
+    ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    li {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    button {
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+
+    input[type="text"] {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+</style>

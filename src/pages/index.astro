@@ -1,0 +1,232 @@
+---
+import { Department, connectDB } from "../lib/db_connection.js";
+import Layout from "../layouts/Layout.astro";
+
+async function getDepartments() {
+    try {
+        await connectDB();
+        const departments = await Department.find({});
+        return departments;
+    } catch (error) {
+        console.error("Error fetching departments:", error);
+        return [];
+    }
+}
+
+async function updateDepartment(departmentId, newAddress) {
+    try {
+        const response = await fetch("/api/departments/" + departmentId, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address: newAddress }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            console.error("Error updating department:", data.error);
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error("Error updating department:", error);
+        return false;
+    }
+}
+
+const departments = await getDepartments();
+---
+
+<Layout title="Departments">
+    <script is:inline>
+        document.addEventListener("DOMContentLoaded", () => {
+            let editingDepartmentId = null;
+            let originalAddress = "";
+
+            async function updateDepartment(departmentId, newAddress) {
+                try {
+                    const response = await fetch(
+                        `/api/departments/${departmentId}`,
+                        {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ address: newAddress }),
+                        },
+                    );
+
+                    if (!response.ok) {
+                        throw new Error("Failed to update department");
+                    }
+
+                    return true;
+                } catch (error) {
+                    console.error("Error updating department:", error);
+                    return false;
+                }
+            }
+
+            // Event delegation for edit buttons
+            document.addEventListener("click", async (e) => {
+                const editButton = e.target.closest(".edit-button");
+                if (!editButton) return;
+
+                const departmentCard = editButton.closest(".department-card");
+                if (!departmentCard) return;
+
+                const departmentId = departmentCard.dataset.departmentId;
+                const titleElement =
+                    departmentCard.querySelector(".department-title");
+                const address = titleElement.textContent.trim();
+
+                editingDepartmentId = departmentId;
+                originalAddress = address;
+
+                const inputElement = document.createElement("input");
+                inputElement.type = "text";
+                inputElement.value = address;
+                inputElement.className =
+                    "w-full px-2 py-1 text-lg font-medium text-slate-800 border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
+
+                const actions = document.createElement("div");
+                actions.className = "flex justify-end gap-2 mt-2";
+                actions.innerHTML = `
+            <button class="save-btn px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+                Save
+            </button>
+            <button class="cancel-btn px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                Cancel
+            </button>
+        `;
+
+                titleElement.replaceWith(inputElement);
+                inputElement.parentNode.insertBefore(
+                    actions,
+                    inputElement.nextSibling,
+                );
+
+                // Handle save and cancel
+                actions.addEventListener("click", async (event) => {
+                    if (event.target.classList.contains("save-btn")) {
+                        const newAddress = inputElement.value.trim();
+                        if (newAddress) {
+                            try {
+                                const success = await updateDepartment(
+                                    departmentId,
+                                    newAddress,
+                                );
+                                if (success) {
+                                    titleElement.textContent = newAddress;
+                                    inputElement.replaceWith(titleElement);
+                                    actions.remove();
+                                    editingDepartmentId = null;
+                                } else {
+                                    alert("Failed to update department");
+                                }
+                            } catch (error) {
+                                console.error("Error:", error);
+                                alert("Error updating department");
+                            }
+                        }
+                    } else if (event.target.classList.contains("cancel-btn")) {
+                        titleElement.textContent = originalAddress;
+                        inputElement.replaceWith(titleElement);
+                        actions.remove();
+                        editingDepartmentId = null;
+                    }
+                });
+            });
+        });
+    </script>
+
+    <div class="min-h-screen bg-slate-50">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <header class="mb-16">
+                <h1
+                    class="text-4xl font-light tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent"
+                >
+                    Department Directory
+                </h1>
+                <p class="mt-2 text-slate-500 font-light">
+                    Select a department to view its messages
+                </p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {
+                    departments.map((department) => (
+                        <div
+                            class="department-card group relative block bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-slate-100"
+                            data-department-id={department._id}
+                        >
+                            <div class="flex items-start justify-between">
+                                <div class="flex-grow">
+                                    <h2 class="department-title text-lg font-medium text-slate-800 group-hover:text-indigo-600 transition-colors">
+                                        {department.address}
+                                    </h2>
+                                </div>
+                                <button class="edit-button text-slate-400 hover:text-indigo-600 transition-colors ml-4">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                            <a
+                                href={`/messages/${department._id}`}
+                                class="mt-4 flex items-center text-sm text-slate-500"
+                            >
+                                <svg
+                                    class="w-4 h-4 mr-2 text-slate-400 group-hover:text-indigo-600 transition-colors"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M17 8l4 4m0 0l-4 4m4-4H3"
+                                    />
+                                </svg>
+                                <span class="font-medium">View Messages</span>
+                            </a>
+                        </div>
+                    ))
+                }
+            </div>
+        </main>
+    </div>
+</Layout>
+
+<style>
+    .department-card {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .department-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        background: linear-gradient(
+            to bottom right,
+            rgba(79, 70, 229, 0.1),
+            transparent
+        );
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .department-card:hover::before {
+        opacity: 1;
+    }
+</style>

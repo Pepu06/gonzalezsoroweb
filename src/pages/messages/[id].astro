@@ -1,0 +1,259 @@
+---
+import { Department, Message, connectDB } from '../../lib/db_connection.js';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+    try {
+        await connectDB();
+        const departments = await Department.find({});
+        return departments.map(department => ({
+            params: { id: department._id.toString() }
+        }));
+    } catch (error) {
+        console.error('Error generating static paths:', error);
+        return [];
+    }
+}
+
+const { id } = Astro.params;
+
+async function getDepartmentWithMessages(departmentId) {
+    try {
+        await connectDB();
+        const department = await Department.findById(departmentId).populate('messages');
+        return department;
+    } catch (error) {
+        console.error('Error fetching department:', error);
+        return null;
+    }
+}
+
+const department = await getDepartmentWithMessages(id);
+if (!department) {
+    return Astro.redirect('/');
+}
+---
+
+<Layout title={`Messages for ${department.address}`}>
+    <script is:inline>
+        function enableMessageEdit(messageId, currentImage) {
+            const messageCard = document.querySelector(`[data-message-id="${messageId}"]`);
+            const textElement = messageCard.querySelector('.message-text');
+            const imageContainer = messageCard.querySelector('.image-container');
+            const text = textElement.textContent;
+
+            // Create edit form container
+            const editContainer = document.createElement('div');
+            editContainer.className = 'space-y-4';
+
+            // Create textarea
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.className = 'w-full p-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500';
+            textarea.style.minHeight = '100px';
+            editContainer.appendChild(textarea);
+
+            // Create image upload section
+            const imageSection = document.createElement('div');
+            imageSection.className = 'space-y-2';
+            imageSection.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <label class="block text-sm font-medium text-slate-700">
+                        Image
+                    </label>
+                    ${currentImage ? `
+                        <button type="button" class="remove-image-btn text-sm text-red-600 hover:text-red-700">
+                            Remove current image
+                        </button>
+                    ` : ''}
+                </div>
+                <input
+                    type="file"
+                    accept="image/*"
+                    class="block w-full text-sm text-slate-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-md file:border-0
+                        file:text-sm file:font-medium
+                        file:bg-indigo-50 file:text-indigo-700
+                        hover:file:bg-indigo-100"
+                />
+                ${currentImage ? `
+                    <div class="mt-2">
+                        <img src="${currentImage}" alt="Current image" class="h-20 rounded-md"/>
+                    </div>
+                ` : ''}
+            `;
+            editContainer.appendChild(imageSection);
+
+            // Create action buttons
+            const actions = document.createElement('div');
+            actions.className = 'flex justify-end gap-2 mt-3';
+            actions.innerHTML = `
+                <button class="save-btn px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+                    Save
+                </button>
+                <button class="cancel-btn px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+            `;
+            editContainer.appendChild(actions);
+
+            // Replace content with edit form
+            textElement.replaceWith(editContainer);
+
+            // Handle remove image button
+            const removeImageBtn = editContainer.querySelector('.remove-image-btn');
+            if (removeImageBtn) {
+                removeImageBtn.addEventListener('click', () => {
+                    const imgPreview = editContainer.querySelector('img');
+                    if (imgPreview) imgPreview.remove();
+                    removeImageBtn.remove();
+                });
+            }
+
+            // Handle save
+            actions.querySelector('.save-btn').addEventListener('click', async () => {
+                const formData = new FormData();
+                formData.append('text', textarea.value.trim());
+                
+                const fileInput = editContainer.querySelector('input[type="file"]');
+                if (fileInput.files[0]) {
+                    formData.append('image', fileInput.files[0]);
+                }
+                
+                // If remove button was clicked and no new file selected
+                if (!fileInput.files[0] && removeImageBtn && !editContainer.querySelector('img')) {
+                    formData.append('removeImage', 'true');
+                }
+
+                try {
+                    const response = await fetch(`/api/messages/${messageId}`, {
+                        method: 'PUT',
+                        body: formData // FormData automatically sets correct Content-Type
+                    });
+
+                    if (response.ok) {
+                        const updatedMessage = await response.json();
+                        
+                        // Update text
+                        textElement.textContent = updatedMessage.text;
+                        
+                        // Update image
+                        if (imageContainer) {
+                            if (updatedMessage.image) {
+                                if (imageContainer.querySelector('img')) {
+                                    imageContainer.querySelector('img').src = updatedMessage.image;
+                                } else {
+                                    imageContainer.innerHTML = `
+                                        <img 
+                                            src="${updatedMessage.image}" 
+                                            alt="Message attachment" 
+                                            class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300" 
+                                        />
+                                    `;
+                                }
+                            } else {
+                                imageContainer.innerHTML = '';
+                            }
+                        }
+                        
+                        editContainer.replaceWith(textElement);
+                    } else {
+                        const error = await response.json();
+                        alert(error.message || 'Failed to update message');
+                    }
+                } catch (error) {
+                    console.error('Error updating message:', error);
+                    alert('Error updating message');
+                }
+            });
+
+            // Handle cancel
+            actions.querySelector('.cancel-btn').addEventListener('click', () => {
+                editContainer.replaceWith(textElement);
+            });
+        }
+    </script>
+
+    <main class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-4xl font-light tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                    Messages for {department.address}
+                </h1>
+                <a href="/" class="back-button group flex items-center text-slate-600 hover:text-indigo-600 transition-colors duration-200">
+                    <span class="mr-2 text-lg transition-transform duration-200 group-hover:-translate-x-1">←</span>
+                    <span class="text-sm font-medium">Back to Departments</span>
+                </a>
+            </div>
+
+            <div class="space-y-6">
+                {department.messages.map((message) => (
+                    <div class="message-card bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-slate-100" data-message-id={message._id}>
+                        <div class="p-6">
+                            <div class="flex justify-between items-start gap-4">
+                                <div class="flex-grow">
+                                    <p class="message-text text-slate-800 leading-relaxed">{message.text}</p>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <button 
+                                        onclick={`enableMessageEdit('${message._id}', '${message.image || ''}')`}
+                                        class="edit-button text-slate-400 hover:text-indigo-600 transition-colors"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </button>
+                                    <time class="text-sm font-medium text-slate-400 whitespace-nowrap">
+                                        {new Date(message.date).toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric'
+                                        })}
+                                    </time>
+                                </div>
+                            </div>
+                            {message.image && (
+                                <div class="mt-4 rounded-lg overflow-hidden image-container">
+                                    <img 
+                                        src={message.image} 
+                                        alt="Message attachment" 
+                                        class="w-full h-auto object-cover hover:scale-105 transition-transform duration-300" 
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+
+                {department.messages.length === 0 && (
+                    <div class="text-center py-16">
+                        <p class="text-slate-500 text-lg font-light">No messages found for this department.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .message-card {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .message-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        background: linear-gradient(to bottom right, rgba(79, 70, 229, 0.1), transparent);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .message-card:hover::before {
+        opacity: 1;
+    }
+</style>
