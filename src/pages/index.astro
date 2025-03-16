@@ -216,7 +216,18 @@ const departments = await getDepartments();
                         </div>
 
                         <div class="mt-6 space-y-4">
-                            <h3 class="text-sm font-medium text-slate-700">Messages:</h3>
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-medium text-slate-700">Messages:</h3>
+                                <a 
+                                    href={`/messages/${department._id}`}
+                                    class="text-sm text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+                                >
+                                    View all
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </a>
+                            </div>
                             {department.messages.map((message) => (
                                 <div class="message-item bg-slate-50 p-3 rounded-lg" data-message-id={message._id}>
                                     <div class="flex items-start justify-between">
