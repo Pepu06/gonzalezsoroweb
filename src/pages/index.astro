@@ -196,6 +196,14 @@ const departments = await getDepartments();
                 <p class="mt-2 text-slate-500 font-light">
                     View and manage departments and their messages.
                 </p>
+                <div class="mt-6">
+                    <input
+                        type="text"
+                        id="departmentSearch"
+                        placeholder="Search departments..."
+                        class="w-full md:w-96 px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                </div>
             </header>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -273,3 +281,22 @@ const departments = await getDepartments();
         opacity: 1;
     }
 </style>
+
+<script is:inline>
+    document.addEventListener("DOMContentLoaded", () => {
+        const searchInput = document.getElementById('departmentSearch');
+        const departmentCards = document.querySelectorAll('.department-card');
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+
+            departmentCards.forEach(card => {
+                const title = card.querySelector('.department-title').textContent.toLowerCase();
+                const messages = Array.from(card.querySelectorAll('.message-text')).map(el => el.textContent.toLowerCase());
+                const matchesSearch = title.includes(searchTerm) || messages.some(msg => msg.includes(searchTerm));
+                
+                card.style.display = matchesSearch ? 'block' : 'none';
+            });
+        });
+    });
+</script>
