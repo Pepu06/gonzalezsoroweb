@@ -1,9 +1,51 @@
 import { c as connectDB, M as Message } from '../../../chunks/db_connection_QpJ2SUVb.mjs';
-import { writeFile, unlink } from 'fs/promises';
+import { unlink, writeFile } from 'fs/promises';
 import path from 'path';
 export { renderers } from '../../../renderers.mjs';
 
 const prerender = false;
+
+async function DELETE({ params }) {
+    try {
+        await connectDB();
+        const { id } = params;
+        
+        // Get the message to check if it has an image to delete
+        const message = await Message.findById(id);
+        
+        if (!message) {
+            return new Response(JSON.stringify({ error: 'Message not found' }), {
+                status: 404,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        // If message has an image, delete it from the filesystem
+        if (message.image) {
+            const imagePath = path.join(process.cwd(), 'public', message.image);
+            try {
+                await unlink(imagePath);
+            } catch (error) {
+                console.error('Error deleting image file:', error);
+                // Continue with message deletion even if image deletion fails
+            }
+        }
+        
+        // Delete the message from the database
+        await Message.findByIdAndDelete(id);
+        
+        return new Response(JSON.stringify({ success: true, message: 'Message deleted successfully' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (error) {
+        console.error('Server error:', error);
+        return new Response(
+            JSON.stringify({ error: 'Server error', message: error.message }),
+            { status: 500 }
+        );
+    }
+}
 
 async function PUT({ params, request }) {
     try {
@@ -67,6 +109,7 @@ async function PUT({ params, request }) {
 
 const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
     __proto__: null,
+    DELETE,
     PUT,
     prerender
 }, Symbol.toStringTag, { value: 'Module' }));
