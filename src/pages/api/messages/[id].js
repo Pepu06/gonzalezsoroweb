@@ -1,5 +1,4 @@
 import { Message, connectDB } from '../../../lib/db_connection.js';
-import { writeFile, unlink } from 'fs/promises';
 import path from 'path';
 
 export const prerender = false;
@@ -19,15 +18,12 @@ export async function DELETE({ params }) {
             });
         }
         
-        // If message has an image, delete it from the filesystem
+        // En Vercel no podemos eliminar archivos del sistema de archivos
+        // Solo actualizamos la base de datos
         if (message.image) {
-            const imagePath = path.join(process.cwd(), 'public', message.image);
-            try {
-                await unlink(imagePath);
-            } catch (error) {
-                console.error('Error deleting image file:', error);
-                // Continue with message deletion even if image deletion fails
-            }
+            console.log('Image path would be deleted in development:', message.image);
+            // En Vercel, los archivos estáticos se gestionan de forma diferente
+            // No necesitamos eliminar físicamente los archivos
         }
         
         // Delete the message from the database
