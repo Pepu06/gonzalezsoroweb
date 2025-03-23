@@ -63,3 +63,45 @@ export async function PUT({ params, request }) {
         );
     }
 }
+
+export async function DELETE({ params }) {
+    try {
+        await connectDB();
+        const { id } = params;
+        
+        // Get the message to check if it has an image to delete
+        const message = await Message.findById(id);
+        
+        if (!message) {
+            return new Response(
+                JSON.stringify({ error: 'Message not found' }),
+                { status: 404 }
+            );
+        }
+        
+        // If message has an image, delete it from the filesystem
+        if (message.image) {
+            const imagePath = path.join(process.cwd(), 'public', message.image);
+            try {
+                await unlink(imagePath);
+            } catch (error) {
+                console.error('Error deleting image file:', error);
+                // Continue with message deletion even if image deletion fails
+            }
+        }
+        
+        // Delete the message from the database
+        await Message.findByIdAndDelete(id);
+        
+        return new Response(
+            JSON.stringify({ success: true, message: 'Message deleted successfully' }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+    } catch (error) {
+        console.error('Server error:', error);
+        return new Response(
+            JSON.stringify({ error: 'Server error', message: error.message }),
+            { status: 500 }
+        );
+    }
+}
