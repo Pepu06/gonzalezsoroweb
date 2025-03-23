@@ -1,46 +1,8 @@
 import { Message, connectDB } from '../../../lib/db_connection.js';
+import { writeFile, unlink } from 'fs/promises';
 import path from 'path';
 
 export const prerender = false;
-
-export async function DELETE({ params }) {
-    try {
-        await connectDB();
-        const { id } = params;
-        
-        // Get the message to check if it has an image to delete
-        const message = await Message.findById(id);
-        
-        if (!message) {
-            return new Response(JSON.stringify({ error: 'Message not found' }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-        
-        // En Vercel no podemos eliminar archivos del sistema de archivos
-        // Solo actualizamos la base de datos
-        if (message.image) {
-            console.log('Image path would be deleted in development:', message.image);
-            // En Vercel, los archivos estáticos se gestionan de forma diferente
-            // No necesitamos eliminar físicamente los archivos
-        }
-        
-        // Delete the message from the database
-        await Message.findByIdAndDelete(id);
-        
-        return new Response(JSON.stringify({ success: true, message: 'Message deleted successfully' }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    } catch (error) {
-        console.error('Server error:', error);
-        return new Response(
-            JSON.stringify({ error: 'Server error', message: error.message }),
-            { status: 500 }
-        );
-    }
-}
 
 export async function PUT({ params, request }) {
     try {
