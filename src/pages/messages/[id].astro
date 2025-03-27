@@ -33,6 +33,7 @@ const department = await getDepartmentWithMessages(id);
 if (!department) {
     return Astro.redirect("/");
 }
+department.messages.sort((a, b) => new Date(b.date) - new Date(a.date));
 ---
 
 <Layout title={`Messages for ${department.address}`}>
