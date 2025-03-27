@@ -6,7 +6,7 @@ import Layout from "../layouts/Layout.astro";
 async function getDepartments() {
     try {
         await connectDB();
-        const departments = await Department.find({}).populate('messages');
+        const departments = await Department.find({}).populate("messages");
         return departments;
     } catch (error) {
         console.error("Error fetching departments:", error);
@@ -49,14 +49,11 @@ const departments = await getDepartments();
 
             async function updateMessage(messageId, newText) {
                 try {
-                    const response = await fetch(
-                        `/api/messages/${messageId}`,
-                        {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ text: newText }),
-                        },
-                    );
+                    const response = await fetch(`/api/messages/${messageId}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text: newText }),
+                    });
 
                     if (!response.ok) {
                         throw new Error("Failed to update message");
@@ -78,7 +75,8 @@ const departments = await getDepartments();
                 if (!departmentCard) return;
 
                 const departmentId = departmentCard.dataset.departmentId;
-                const titleElement = departmentCard.querySelector(".department-title");
+                const titleElement =
+                    departmentCard.querySelector(".department-title");
                 const address = titleElement.textContent.trim();
 
                 editingDepartmentId = departmentId;
@@ -87,7 +85,8 @@ const departments = await getDepartments();
                 const inputElement = document.createElement("input");
                 inputElement.type = "text";
                 inputElement.value = address;
-                inputElement.className = "w-full px-2 py-1 text-lg font-medium text-slate-800 border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
+                inputElement.className =
+                    "w-full px-2 py-1 text-lg font-medium text-slate-800 border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
 
                 const actions = document.createElement("div");
                 actions.className = "flex justify-end gap-2 mt-2";
@@ -101,14 +100,20 @@ const departments = await getDepartments();
                 `;
 
                 titleElement.replaceWith(inputElement);
-                inputElement.parentNode.insertBefore(actions, inputElement.nextSibling);
+                inputElement.parentNode.insertBefore(
+                    actions,
+                    inputElement.nextSibling,
+                );
 
                 // Handle save and cancel for department
                 actions.addEventListener("click", async (event) => {
                     if (event.target.classList.contains("save-btn")) {
                         const newAddress = inputElement.value.trim();
                         if (newAddress) {
-                            const success = await updateDepartment(departmentId, newAddress);
+                            const success = await updateDepartment(
+                                departmentId,
+                                newAddress,
+                            );
                             if (success) {
                                 titleElement.textContent = newAddress;
                                 inputElement.replaceWith(titleElement);
@@ -129,14 +134,17 @@ const departments = await getDepartments();
 
             // Event delegation for message edit buttons
             document.addEventListener("click", async (e) => {
-                const editMessageButton = e.target.closest(".edit-message-button");
+                const editMessageButton = e.target.closest(
+                    ".edit-message-button",
+                );
                 if (!editMessageButton) return;
 
                 const messageItem = editMessageButton.closest(".message-item");
                 if (!messageItem) return;
 
                 const messageId = messageItem.dataset.messageId;
-                const messageElement = messageItem.querySelector(".message-text");
+                const messageElement =
+                    messageItem.querySelector(".message-text");
                 const messageText = messageElement.textContent.trim();
 
                 editingMessageId = messageId;
@@ -145,7 +153,8 @@ const departments = await getDepartments();
                 const inputElement = document.createElement("input");
                 inputElement.type = "text";
                 inputElement.value = messageText;
-                inputElement.className = "w-full px-2 py-1 text-sm text-slate-800 border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
+                inputElement.className =
+                    "w-full px-2 py-1 text-sm text-slate-800 border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
 
                 const actions = document.createElement("div");
                 actions.className = "flex justify-end gap-2 mt-2";
@@ -159,14 +168,20 @@ const departments = await getDepartments();
                 `;
 
                 messageElement.replaceWith(inputElement);
-                inputElement.parentNode.insertBefore(actions, inputElement.nextSibling);
+                inputElement.parentNode.insertBefore(
+                    actions,
+                    inputElement.nextSibling,
+                );
 
                 // Handle save and cancel for message
                 actions.addEventListener("click", async (event) => {
                     if (event.target.classList.contains("save-message-btn")) {
                         const newText = inputElement.value.trim();
                         if (newText) {
-                            const success = await updateMessage(messageId, newText);
+                            const success = await updateMessage(
+                                messageId,
+                                newText,
+                            );
                             if (success) {
                                 messageElement.textContent = newText;
                                 inputElement.replaceWith(messageElement);
@@ -176,7 +191,9 @@ const departments = await getDepartments();
                                 alert("Failed to update message");
                             }
                         }
-                    } else if (event.target.classList.contains("cancel-message-btn")) {
+                    } else if (
+                        event.target.classList.contains("cancel-message-btn")
+                    ) {
                         messageElement.textContent = originalMessage;
                         inputElement.replaceWith(messageElement);
                         actions.remove();
@@ -190,7 +207,9 @@ const departments = await getDepartments();
     <div class="min-h-screen bg-slate-50">
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <header class="mb-16">
-                <h1 class="text-4xl font-light tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                <h1
+                    class="text-4xl font-light tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent"
+                >
                     Departments
                 </h1>
                 <p class="mt-2 text-slate-500 font-light">
@@ -207,35 +226,58 @@ const departments = await getDepartments();
             </header>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {departments.map((department) => (
-                    <div class="department-card group relative block bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-slate-100"
-                        data-department-id={department._id}>
-                        <div class="flex items-start justify-between">
-                            <div class="flex-grow">
-                                <h2 class="department-title text-lg font-medium text-slate-800 group-hover:text-indigo-600 transition-colors">
-                                    {department.address}
-                                </h2>
-                            </div>
-                            <button class="edit-button text-slate-400 hover:text-indigo-600 transition-colors ml-4">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="mt-6 space-y-4">
-                            <div class="flex justify-between items-center">
-                                <a 
-                                    href={`/messages/${department._id}`}
-                                    class="text-sm text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
-                                >
-                                    View all
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                {
+                    departments.map((department) => (
+                        <div
+                            class="department-card group relative block bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-slate-100"
+                            data-department-id={department._id}
+                        >
+                            <div class="flex items-start justify-between">
+                                <div class="flex-grow">
+                                    <h2 class="department-title text-lg font-medium text-slate-800 group-hover:text-indigo-600 transition-colors">
+                                        {department.address}
+                                    </h2>
+                                </div>
+                                <button class="edit-button text-slate-400 hover:text-indigo-600 transition-colors ml-4">
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                        />
                                     </svg>
-                                </a>
+                                </button>
                             </div>
-                            {/* {department.messages.map((message) => (
+
+                            <div class="mt-6 space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <a
+                                        href={`/messages/${department._id}`}
+                                        class="text-sm text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+                                    >
+                                        View all
+                                        <svg
+                                            class="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M9 5l7 7-7 7"
+                                            />
+                                        </svg>
+                                    </a>
+                                </div>
+                                {/* {department.messages.map((message) => (
                                 <div class="message-item bg-slate-50 p-3 rounded-lg" data-message-id={message._id}>
                                     <div class="flex items-start justify-between">
                                         <p class="message-text text-sm text-slate-600">{message.text}</p>
@@ -247,9 +289,10 @@ const departments = await getDepartments();
                                     </div>
                                 </div>
                             ))} */}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))
+                }
             </div>
         </main>
     </div>
@@ -283,18 +326,24 @@ const departments = await getDepartments();
 
 <script is:inline>
     document.addEventListener("DOMContentLoaded", () => {
-        const searchInput = document.getElementById('departmentSearch');
-        const departmentCards = document.querySelectorAll('.department-card');
+        const searchInput = document.getElementById("departmentSearch");
+        const departmentCards = document.querySelectorAll(".department-card");
 
-        searchInput.addEventListener('input', (e) => {
+        searchInput.addEventListener("input", (e) => {
             const searchTerm = e.target.value.toLowerCase();
 
-            departmentCards.forEach(card => {
-                const title = card.querySelector('.department-title').textContent.toLowerCase();
-                const messages = Array.from(card.querySelectorAll('.message-text')).map(el => el.textContent.toLowerCase());
-                const matchesSearch = title.includes(searchTerm) || messages.some(msg => msg.includes(searchTerm));
-                
-                card.style.display = matchesSearch ? 'block' : 'none';
+            departmentCards.forEach((card) => {
+                const title = card
+                    .querySelector(".department-title")
+                    .textContent.toLowerCase();
+                const messages = Array.from(
+                    card.querySelectorAll(".message-text"),
+                ).map((el) => el.textContent.toLowerCase());
+                const matchesSearch =
+                    title.includes(searchTerm) ||
+                    messages.some((msg) => msg.includes(searchTerm));
+
+                card.style.display = matchesSearch ? "block" : "none";
             });
         });
     });
